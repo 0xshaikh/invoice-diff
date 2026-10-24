@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""Build the invoice-diff marketing landing page as a single-file HTML."""
+import base64, os, json
+
+OUT = os.path.dirname(os.path.abspath(__file__))
+SITE = "https://0xshaikh.github.io/invoice-diff"
+
+def b64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+# ---------- sample data (real numbers per brief) ----------
+CLI_OUTPUT = """
+$ invoice-diff reconcile --marketplace flipkart --in invoices/ --out report.json
+  \u203a scanning 3 marketplace invoices ...
+  \u203a parsing 100 orders ... ok
+  \u203a reconciling against bank statement ...
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  RECONCILIATION REPORT                              10s
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  orders reconciled      100 / 100
+  discrepancies          5      (3 GST \u00b7 1 value \u00b7 1 missing)
+  total impact           Rs. 2,340.00
+  runtime                10s
+
+  DISCREPANCY              ORDER       MARKETPLACE    AMOUNT      TYPE
+  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  \u2500\u2500\u2500\u2500\u2500
+  GST rate mismatch       #FK-10482    Flipkart       Rs.  620    gst
+  GST rate mismatch       #FK-10519    Flipkart       Rs.  410    gst
+  GST rate mismatch       #MS-7731     Meesho         Rs.  355    gst
+  Invoice > payout        #AM-99203    Amazon.in      Rs.  855    value
+  Payout not reconciled   #FK-10677    Flipkart       Rs.  100    missing
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  exported \u2192 report.json  report.csv  report.md  report.xlsx
+  exit 0
+"""
+
+CLI_REF = """invoice-diff reconcile --marketplace flipkart --in invoices/ --out report.json
+invoice-diff reconcile --marketplace meesho   --in invoices/ --out report.csv
+invoice-diff reconcile --marketplace amazon   --in invoices/ --out report.md
+invoice-diff reconcile --marketplace all      --in invoices/ --out report.xlsx
+invoice-diff diff      --marketplace flipkart --left a.csv   --right b.csv
+invoice-diff export    --from report.json     --to report.xlsx
+invoice-diff init                          # writes a starter config.toml
+invoice-diff --help"""
+
+# ---------- CSS ----------
+CSS = """
+:root{
+  --bg:#0a0d14; --bg-2:#0d1019; --panel:#121620; --panel-2:#161b28;
+  --border:#2c3446; --border-2:#3a4459;
+  --fg:#eef2f7; --fg-2:#c3cbd9; --muted:#8b94a5;
+  --accent:#FF6B35; --accent-dim:#c24f22; --accent-soft:rgba(255,107,53,.12);
+  --green:#4ade80; --red:#f87171; --yellow:#facc15; --blue:#60a5fa;
+  --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--sans);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.container{max-width:1120px;margin:0 auto;padding:0 24px}
+.eyebrow{
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;
+}
+.rule{height:1px;background:var(--border);margin:0}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,13,20,.82);backdrop-filter:saturate(140%) blur(12px);
+  -webkit-backdrop-filter:saturate(140%) blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{display:flex;align-items:center;gap:32px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em}
+.brand-mark{width:26px;height:26px;border-radius:7px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;color:#0a0d14;font-weight:900;
+  font-family:var(--mono);font-size:14px}
+.nav-links{display:flex;gap:26px;margin-left:8px}
+.nav-links a{color:var(--muted);font-size:14px;font-weight:500;transition:color .15s}
+.nav-links a:hover{color:var(--fg)}
+.nav-spacer{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-weight:600;font-size:14px;border-radius:8px;
+  padding:9px 16px;border:1px solid var(--border-2);color:var(--fg);
+  transition:transform .12s ease,background .15s,border-color .15s;
+  background:var(--panel-2);
+}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#0a0d14;border-color:var(--accent)}
+.btn-primary:hover{background:#ff7d4d;border-color:#ff7d4d}
+.btn-ghost{background:transparent}
+.btn-sm{padding:7px 12px;font-size:13px}
+
+/* ---------- hero ---------- */
+header.hero{
+  padding:76px 0 56px;
+  background:
+    radial-gradient(900px 380px at 78% -10%, rgba(255,107,53,.13), transparent 70%),
+    linear-gradient(180deg,#0c0f18 0%, var(--bg) 100%);
+  border-bottom:1px solid var(--border);
+}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+h1{font-size:46px;line-height:1.08;letter-spacing:-.025em;margin:0 0 18px;font-weight:750}
+h1 .hl{color:var(--accent)}
+.hero-sub{font-size:18px;color:var(--fg-2);max-width:56ch;margin:0 0 26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.trust{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.trust .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.trust code{font-family:var(--mono);color:var(--fg-2);font-size:12.5px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.kpi{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:18px 18px 16px;position:relative;overflow:hidden;
+}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.7}
+.kpi .num{font-size:30px;font-weight:750;letter-spacing:-.02em;line-height:1.05;font-family:var(--mono)}
+.kpi .lbl{font-size:12.5px;color:var(--muted);margin-top:6px;letter-spacing:.02em}
+
+/* ---------- sections ---------- */
+section{padding:72px 0;border-bottom:1px solid var(--border)}
+.sec-head{max-width:70ch;margin-bottom:40px}
+h2{font-size:30px;letter-spacing:-.02em;margin:6px 0 12px;font-weight:700;line-height:1.15}
+.sec-head p{color:var(--fg-2);font-size:16.5px;margin:0}
+
+/* ---------- screenshot frame ---------- */
+.shot{
+  border:1px solid var(--border-2);border-radius:12px;overflow:hidden;
+  background:#0b0e15;box-shadow:0 30px 70px -30px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.shot-bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:#1a1f2c;border-bottom:1px solid var(--border)}
+.light{width:11px;height:11px;border-radius:50%}
+.light.r{background:#ff5f57}.light.y{background:#febc2e}.light.g{background:#28c840}
+.shot-title{margin-left:10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.shot-title span{color:var(--fg-2)}
+pre{margin:0;padding:18px 20px;overflow-x:auto;font-family:var(--mono);font-size:13.2px;line-height:1.65}
+pre.code{background:#0b0e15;color:var(--fg-2);tab-size:2}
+.k-cmd{color:var(--accent);font-weight:600}
+.k-flag{color:var(--blue)}
+.k-str{color:var(--green)}
+.k-com{color:#6b7280;font-style:italic}
+.k-hdr{color:var(--yellow)}
+.k-ok{color:var(--green)}
+.k-warn{color:var(--yellow)}
+.k-bad{color:var(--red)}
+.k-dim{color:var(--muted)}
+.k-hr{color:var(--border-2)}
+.k-num{color:#f0abfc}
+
+/* ---------- problem ---------- */
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.pain{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px}
+.pain .ic{font-size:20px;margin-bottom:12px;display:block}
+.pain h3{font-size:16px;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
+.pain p{font-size:14.5px;color:var(--muted);margin:0}
+.pain .stat{font-family:var(--mono);font-size:13px;color:var(--accent);margin-top:12px;display:block}
+
+/* ---------- features ---------- */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.feat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px}
+.feat h3{font-size:17px;margin:14px 0 8px;font-weight:700;letter-spacing:-.01em}
+.feat p{font-size:14.5px;color:var(--muted);margin:0 0 14px}
+.feat .tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:6px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid rgba(255,107,53,.25)}
+.tag.plain{background:rgba(255,255,255,.04);color:var(--fg-2);border-color:var(--border-2)}
+.feat .badge{font-size:22px;display:inline-block}
+
+/* ---------- marketplaces ---------- */
+.markets{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.market{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.market .name{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.market .meta{font-size:13px;color:var(--muted);font-family:var(--mono)}
+.market .pill{align-self:flex-start;font-size:11.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:4px 9px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid rgba(255,107,53,.25)}
+
+/* ---------- install ---------- */
+.install{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+.install ol{margin:0;padding-left:20px;color:var(--fg-2);font-size:15px}
+.install li{margin-bottom:12px}
+.install li code{font-family:var(--mono);font-size:13.5px;color:var(--accent);
+  background:var(--accent-soft);padding:2px 6px;border-radius:5px}
+
+/* ---------- FAQ ---------- */
+.faq{max-width:820px}
+details{border-bottom:1px solid var(--border);padding:16px 0}
+summary{cursor:pointer;font-weight:600;font-size:15.5px;list-style:none;display:flex;
+  justify-content:space-between;align-items:center;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--accent);font-weight:700;font-size:18px;flex:0 0 auto}
+details[open] summary::after{content:"\\2013"}
+details p{color:var(--muted);margin:12px 0 4px;font-size:14.5px}
+details p code{font-family:var(--mono);font-size:13px;color:var(--fg-2);
+  background:rgba(255,255,255,.05);padding:1px 5px;border-radius:4px}
+
+/* ---------- CTA / footer ---------- */
+.cta{padding:72px 0;text-align:center;
+  background:radial-gradient(700px 300px at 50% 0%, rgba(255,107,53,.10), transparent 70%)}
+.cta h2{font-size:32px;margin-bottom:14px}
+.cta p{color:var(--fg-2);max-width:52ch;margin:0 auto 26px}
+.cta .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+footer{padding:40px 0;border-top:1px solid var(--border);color:var(--muted);font-size:13.5px}
+.foot-inner{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.foot-inner a{color:var(--muted)}
+.foot-inner a:hover{color:var(--fg)}
+.foot-links{display:flex;gap:22px}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  .hero-grid,.install{grid-template-columns:1fr;gap:32px}
+  h1{font-size:36px}
+  .pains,.features,.markets{grid-template-columns:1fr}
+  .nav-links{display:none}
+  section{padding:56px 0}
+  .cta h2{font-size:27px}
+}
+@media (max-width:600px){
+  h1{font-size:29px}
+  h2{font-size:23px}
+  .kpis{grid-template-columns:1fr}
+  .container{padding:0 18px}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{justify-content:center}
+  pre{font-size:12px}
+  header.hero{padding:48px 0 40px}
+}
+"""
+
+# ---------- HTML body (built via placeholders) ----------
+HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>invoice-diff \u2014 Reconcile marketplace invoices in 10 seconds</title>
+<meta name="description" content="A Python CLI that parses Flipkart, Meesho and Amazon.in invoices, reconciles them against payouts, and surfaces GST, value and missing-order discrepancies. 100 orders in 10 seconds.">
+<meta name="author" content="0xshaikh">
+<meta name="theme-color" content="#0a0d14">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="__SITE__/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="alternate" type="text/plain" title="Privacy" href="/PRIVACY.md">
+<link rel="alternate" type="text/plain" title="Terms" href="/TERMS.md">
+<link rel="alternate" type="text/plain" title="robots" href="/robots.txt">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="invoice-diff">
+<meta property="og:title" content="invoice-diff \u2014 Reconcile marketplace invoices in 10 seconds">
+<meta property="og:description" content="Parse Flipkart, Meesho and Amazon.in invoices, reconcile payouts, surface GST/value/missing discrepancies. 100 orders in 10 seconds. MIT.">
+<meta property="og:url" content="__SITE__/">
+<meta property="og:image" content="__SITE__/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="invoice-diff hero: 100 orders reconciled, 5 discrepancies, Rs.2,340 impact, 10s runtime">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="invoice-diff \u2014 Reconcile marketplace invoices in 10 seconds">
+<meta name="twitter:description" content="Parse Flipkart, Meesho, Amazon.in invoices; reconcile payouts; surface GST, value and missing-order discrepancies.">
+<meta name="twitter:image" content="__SITE__/og-image.png">
+<meta name="twitter:creator" content="@0xshaikh">
+
+<meta itemprop="name" content="invoice-diff">
+<meta itemprop="description" content="Reconcile marketplace invoices in 10 seconds.">
+<script type="application/ld+json">__LDJSON__</script>
+<style>__CSS__</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav aria-label="Primary">
+  <div class="container nav-inner">
+    <a class="brand" href="#top" aria-label="invoice-diff home">
+      <span class="brand-mark" aria-hidden="true">\u2192</span>
+      <span>invoice-diff</span>
+    </a>
+    <div class="nav-links">
+      <a href="#problem">Problem</a>
+      <a href="#features">Features</a>
+      <a href="#cli">CLI</a>
+      <a href="#marketplaces">Marketplaces</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-spacer"></div>
+    <a class="btn btn-primary btn-sm" href="https://github.com/0xshaikh/invoice-diff">GitHub \u2605</a>
+  </div>
+</nav>
+
+<a id="top"></a>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">Python \u00b7 CLI \u00b7 MIT</span>
+      <h1>Reconcile marketplace invoices in <span class="hl">10 seconds</span>.</h1>
+      <p class="hero-sub">A single command parses Flipkart, Meesho and Amazon.in invoices, reconciles them against payouts, and reports every GST, value and missing-order discrepancy \u2014 with the rupees at risk.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com/0xshaikh/invoice-diff">Get invoice-diff</a>
+        <a class="btn" href="#install">Install in 60s</a>
+      </div>
+      <div class="trust">
+        <span class="dot" aria-hidden="true"></span>
+        <span>MIT licensed</span>
+        <span>\u00b7</span>
+        <span>Zero config</span>
+        <span>\u00b7</span>
+        <span>Offline \u2014 no data leaves your machine</span>
+      </div>
+    </div>
+    <div class="kpis" role="group" aria-label="Sample reconciliation results">
+      <div class="kpi"><div class="num">100</div><div class="lbl">orders reconciled</div></div>
+      <div class="kpi"><div class="num">5</div><div class="lbl">discrepancies found</div></div>
+      <div class="kpi"><div class="num">Rs.2,340</div><div class="lbl">total impact</div></div>
+      <div class="kpi"><div class="num">10s</div><div class="lbl">total runtime</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ SCREENSHOT ============ -->
+<section id="screenshot" style="border-bottom:none;padding-top:0">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">Live output</span>
+      <h2>What you see, in one run.</h2>
+      <p>100 orders across three marketplaces, reconciled in ten seconds. Every discrepancy is typed, priced, and attributable to a specific invoice line.</p>
+    </div>
+    <div class="shot">
+      <div class="shot-bar" aria-hidden="true">
+        <span class="light r"></span><span class="light y"></span><span class="light g"></span>
+        <span class="shot-title">~/work/finance \u2014 <span>invoice-diff reconcile</span></span>
+      </div>
+<pre class="code">__HLTERM__</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section id="problem">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">The problem</span>
+      <h2>Reconciliation eats your month-end.</h2>
+      <p>Sellers move money between Flipkart, Meesho and Amazon every day. The gap between what a marketplace owes you and what actually lands in your bank is where margin goes to die \u2014 and it almost never shows up in the dashboard.</p>
+    </div>
+    <div class="pains">
+      <div class="pain">
+        <span class="ic" aria-hidden="true">\U0001f558</span>
+        <h3>Manual hours</h3>
+        <p>Opening three dashboards, exporting three CSVs, and matching rows by hand. A month-end reconciliation that should take minutes takes an afternoon.</p>
+        <span class="stat">~3\u20135 hrs / month, per seller</span>
+      </div>
+      <div class="pain">
+        <span class="ic" aria-hidden="true">\u20b9</span>
+        <h3>GST errors</h3>
+        <p>Marketplace GST is calculated at its own rate tables. A 5% line charged at 18% is invisible unless someone is watching every invoice line.</p>
+        <span class="stat">3 GST mismatches in the sample run alone</span>
+      </div>
+      <div class="pain">
+        <span class="ic" aria-hidden="true">\U0001f507</span>
+        <h3>Silent mismatches</h3>
+        <p>Payouts that arrive a week late, short-paid invoices, orders that never hit the statement. Nothing pings. Nothing escalates. It just compounds.</p>
+        <span class="stat">Rs.2,340 walked away in one 10s run</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">Features</span>
+      <h2>Three stages. One command.</h2>
+      <p>Each stage is a pure function of files in and files out. Wire them together in shell, or run the whole pipeline with one reconcile.</p>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <span class="badge" aria-hidden="true">\U0001f4e5</span>
+        <h3>Parser</h3>
+        <p>Reads marketplace-specific invoice formats, normalises currency, splits line items, and tags each row with its source marketplace and order id.</p>
+        <div class="tags">
+          <span class="tag">Flipkart</span>
+          <span class="tag">Meesho</span>
+          <span class="tag">Amazon.in</span>
+          <span class="tag plain">CSV / XLSX / JSON</span>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="badge" aria-hidden="true">\u2696\ufe0f</span>
+        <h3>Reconciler</h3>
+        <p>Matches invoices against payouts and classifies every gap into one of seven discrepancy types \u2014 each with a rupee impact and a severity.</p>
+        <div class="tags">
+          <span class="tag">gst</span>
+          <span class="tag">value</span>
+          <span class="tag">missing</span>
+          <span class="tag plain">+ 4 more</span>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="badge" aria-hidden="true">\U0001f4e4</span>
+        <h3>Exporter</h3>
+        <p>Writes the full report \u2014 typed, priced, sorted \u2014 to the format your accountant, auditor or CI pipeline wants. All four at once if you like.</p>
+        <div class="tags">
+          <span class="tag">JSON</span>
+          <span class="tag">CSV</span>
+          <span class="tag">Markdown</span>
+          <span class="tag">XLSX</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLI ============ -->
+<section id="cli">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">CLI reference</span>
+      <h2>Every command, at a glance.</h2>
+      <p>One binary, four verbs. Flags are consistent across verbs so muscle memory survives a rewrite.</p>
+    </div>
+    <div class="shot">
+      <div class="shot-bar" aria-hidden="true">
+        <span class="light r"></span><span class="light y"></span><span class="light g"></span>
+        <span class="shot-title">~/work/finance \u2014 <span>invoice-diff --help</span></span>
+      </div>
+<pre class="code">__HLREF__</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SUPPORTED MARKETPLACES ============ -->
+<section id="marketplaces">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">Supported marketplaces</span>
+      <h2>Three platforms. One pipeline.</h2>
+      <p>Each marketplace has a dedicated parser with its own rate tables, tax conventions and payout schedules. Adding a fourth is a small change, not a fork.</p>
+    </div>
+    <div class="markets">
+      <div class="market">
+        <span class="pill">India \u00b7 Flipkart</span>
+        <div class="name">Flipkart</div>
+        <div class="meta">Seller payouts \u00b7 GST @ 5/12/18% \u00b7 COD &amp; prepaid</div>
+      </div>
+      <div class="market">
+        <span class="pill">India \u00b7 Meesho</span>
+        <div class="name">Meesho</div>
+        <div class="meta">Social-selling payouts \u00b7 GST @ 5% \u00b7 weekly batches</div>
+      </div>
+      <div class="market">
+        <span class="pill">India \u00b7 Amazon</span>
+        <div class="name">Amazon.in</div>
+        <div class="meta">FBA &amp; non-FBA \u00b7 GST @ 5/12/18% \u00b7 TCS &amp; TDS lines</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="install">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">Install in 60 seconds</span>
+      <h2>From nothing to a report in a minute.</h2>
+    </div>
+    <div class="install">
+      <div class="shot">
+        <div class="shot-bar" aria-hidden="true">
+          <span class="light r"></span><span class="light y"></span><span class="light g"></span>
+          <span class="shot-title">~/work/finance \u2014 <span>zsh</span></span>
+        </div>
+<pre class="code"><span class="k-com"># 1. requires Python 3.10+</span>
+<span class="k-cmd">pip</span> install invoice-diff
+
+<span class="k-com"># 2. point it at your invoices</span>
+<span class="k-cmd">invoice-diff</span> init
+
+<span class="k-com"># 3. reconcile and export</span>
+<span class="k-cmd">invoice-diff</span> <span class="k-flag">reconcile</span> <span class="k-flag">--marketplace</span> all <span class="k-flag">--in</span> <span class="k-str">invoices/</span> <span class="k-flag">--out</span> <span class="k-str">report.xlsx</span></pre>
+      </div>
+      <ol>
+        <li>Install from PyPI with <code>pip install invoice-diff</code> \u2014 or straight from GitHub if you prefer.</li>
+        <li>Drop marketplace exports and your bank statement into <code>invoices/</code>. Filenames don't need to match anything.</li>
+        <li>Run <code>reconcile</code>. The command is idempotent \u2014 rerun it on new data without touching state.</li>
+        <li>Read <code>report.xlsx</code>. Hand it to your accountant. Move on with your month.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="container">
+    <div class="sec-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>Questions, answered.</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Does invoice-diff log in to my marketplace accounts?</summary>
+        <p>No. It never touches the internet. You download the CSV/XLSX exports yourself from each marketplace dashboard, and invoice-diff reads those files. Your credentials never leave your machine and your data never leaves your disk.</p>
+      </details>
+      <details>
+        <summary>Which marketplaces are supported?</summary>
+        <p>Flipkart, Meesho and Amazon.in \u2014 the three that cover the bulk of Indian seller payouts today. The parser layer is pluggable, so a fourth marketplace is a parser module plus a rate table, not a fork.</p>
+      </details>
+      <details>
+        <summary>What counts as a "discrepancy"?</summary>
+        <p>Any mismatch between an invoice line and its corresponding payout \u2014 classified into one of seven types: <code>gst</code>, <code>value</code>, <code>missing</code>, <code>duplicate</code>, <code>late</code>, <code>rounding</code> and <code>unmatched</code>. Each carries a rupee impact and a severity.</p>
+      </details>
+      <details>
+        <summary>Is my data sent anywhere?</summary>
+        <p>No. There is no telemetry, no analytics, no phone-home. Every stage reads from local files and writes to local files. The whole run is reproducible offline.</p>
+      </details>
+      <details>
+        <summary>What's the license?</summary>
+        <p>MIT. Use it, ship it, sell it against it. Attribution appreciated but not required.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+  <div class="container">
+    <span class="eyebrow">Get started</span>
+    <h2>Reconcile your next month in one command.</h2>
+    <p>Free, MIT licensed, and offline by design. If your marketplaces owe you money, invoice-diff will tell you exactly how much.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="https://github.com/0xshaikh/invoice-diff">Star on GitHub</a>
+      <a class="btn" href="https://github.com/0xshaikh/invoice-diff#readme">Read the README</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="container foot-inner">
+    <div>\u00a9 2026 0xshaikh \u00b7 MIT License \u00b7 <a href="/PRIVACY.md">Privacy</a> \u00b7 <a href="/TERMS.md">Terms</a></div>
+    <div class="foot-links">
+      <a href="https://github.com/0xshaikh/invoice-diff">Source</a>
+      <a href="https://github.com/0xshaikh">0xshaikh</a>
+      <a href="https://github.com/0xshaikh/invoice-diff/issues">Issues</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
+"""
+
+def esc(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+def hl_ref(src):
+    out = []
+    for line in src.splitlines():
+        if not line.strip():
+            out.append("")
+            continue
+        if line.lstrip().startswith("#"):
+            out.append('<span class="k-com">' + esc(line) + '</span>')
+            continue
+        parts = []
+        for t in line.split():
+            if t == "invoice-diff":
+                parts.append('<span class="k-cmd">' + esc(t) + '</span> ')
+            elif t.startswith("--"):
+                parts.append('<span class="k-flag">' + esc(t) + '</span> ')
+            else:
+                parts.append(esc(t) + ' ')
+        out.append("".join(parts).rstrip())
+    return "\n".join(out)
+
+def hl_term(src):
+    out = []
+    for line in src.splitlines():
+        if not line:
+            out.append("")
+            continue
+        s = esc(line)
+        if line.startswith("$"):
+            out.append('<span class="k-cmd">$</span> ' + s[2:])
+        elif line.startswith("  \u203a"):
+            out.append('<span class="k-dim">' + s + '</span>')
+        elif line.startswith("\u2500\u2500") and "RECONCILIATION" not in line:
+            out.append('<span class="k-hr">' + s + '</span>')
+        elif "RECONCILIATION REPORT" in line:
+            out.append('<span class="k-hdr">' + s + '</span>')
+        elif "exported" in line:
+            out.append(s.replace("exported", '<span class="k-ok">exported</span>'))
+        elif "exit 0" in line:
+            out.append(s.replace("exit 0", '<span class="k-ok">exit 0</span>'))
+        elif "discrepancies" in line and "  5" in line:
+            out.append(s.replace("  5", '  <span class="k-warn">5</span>'))
+        elif "Rs. 2,340" in line:
+            out.append(s.replace("Rs. 2,340.00", '<span class="k-num">Rs. 2,340.00</span>'))
+        elif "100 / 100" in line:
+            out.append(s.replace("100 / 100", '<span class="k-ok">100 / 100</span>'))
+        elif line.strip().startswith("GST"):
+            out.append(s.replace("Rs.", '<span class="k-num">Rs.</span>').replace("gst", '<span class="k-warn">gst</span>'))
+        elif line.strip().startswith("Invoice") or line.strip().startswith("Payout"):
+            out.append(s.replace("value", '<span class="k-bad">value</span>').replace("missing", '<span class="k-bad">missing</span>'))
+        elif line.strip().startswith("ORDER"):
+            out.append('<span class="k-dim">' + s + '</span>')
+        else:
+            out.append(s)
+    return "\n".join(out)
+
+LDJSON = json.dumps({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "invoice-diff",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Linux, macOS, Windows (WSL)",
+    "description": "Python CLI that parses Flipkart, Meesho and Amazon.in invoices, reconciles them against payouts and surfaces GST, value and missing-order discrepancies.",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+    "license": "https://opensource.org/licenses/MIT",
+    "url": "https://0xshaikh.github.io/invoice-diff",
+    "sourceCode": "https://github.com/0xshaikh/invoice-diff",
+    "author": {"@type": "Person", "name": "0xshaikh", "url": "https://github.com/0xshaikh"},
+    "runtimePlatform": "Python 3.10+",
+})
+
+HTML = (HTML
+    .replace("__SITE__", SITE)
+    .replace("__CSS__", CSS)
+    .replace("__LDJSON__", LDJSON)
+    .replace("__HLREF__", hl_ref(CLI_REF))
+    .replace("__HLTERM__", hl_term(CLI_OUTPUT))
+)
+
+path = os.path.join(OUT, "index.html")
+with open(path, "w", encoding="utf-8") as f:
+    f.write(HTML)
+print("index.html bytes:", os.path.getsize(path))

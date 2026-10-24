@@ -1,0 +1,154 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "invoice-diff"
+version = "0.1.0"
+description = "Reconcile marketplace settlement files (Flipkart, Meesho, Amazon) against your expected invoices and flag every discrepancy."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Anas Shaikh", email = "anas@zerovyn.com" },
+]
+maintainers = [
+    { name = "Anas Shaikh", email = "anas@zerovyn.com" },
+]
+keywords = [
+    "finance",
+    "reconciliation",
+    "marketplace",
+    "flipkart",
+    "meesho",
+    "amazon",
+    "invoice",
+    "settlement",
+    "csv",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Finance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Typing :: Typed",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "openpyxl>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.8.0",
+    "black>=24.0.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
+]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+]
+
+[project.scripts]
+invoice-diff = "invoice_diff.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/0xshaikh/invoice-diff"
+Documentation = "https://github.com/0xshaikh/invoice-diff#readme"
+Repository = "https://github.com/0xshaikh/invoice-diff"
+Issues = "https://github.com/0xshaikh/invoice-diff/issues"
+Changelog = "https://github.com/0xshaikh/invoice-diff/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = { find = { where = ["."], include = ["invoice_diff*"] } }
+
+[tool.setuptools.package-data]
+invoice_diff = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# Ruff — linting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".pytest_cache",
+    "samples",
+    "reports",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",  # line-too-long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["invoice_diff"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "integration: tests that touch the filesystem or heavy IO",
+    "slow: tests that take more than a second",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+no_implicit_optional = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*"]
+ignore_missing_imports = true

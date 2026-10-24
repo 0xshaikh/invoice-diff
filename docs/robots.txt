@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://0xshaikh.github.io/invoice-diff/sitemap.xml
