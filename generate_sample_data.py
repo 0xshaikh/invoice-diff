@@ -62,7 +62,7 @@ def generate_flipkart() -> None:
 
     # Build clean expected rows first
     expected_rows: list[dict] = []
-    for i, oid in enumerate(ids):
+    for oid in ids:
         d = start + timedelta(days=random.randint(0, 25))
         expected_rows.append(_flipkart_row(oid, d))
 
@@ -72,8 +72,7 @@ def generate_flipkart() -> None:
     # --- 2 MISSING_IN_SETTLEMENT: drop orders #10 and #42 from settlement ---
     missing_idx = [10, 42]
     drop_ids = {settlement_rows[i]["Seller Order Id"] for i in missing_idx}
-    settlement_rows = [r for r in settlement_rows
-                       if r["Seller Order Id"] not in drop_ids]
+    settlement_rows = [r for r in settlement_rows if r["Seller Order Id"] not in drop_ids]
 
     # --- 1 EXTRA_IN_SETTLEMENT: append an order not in expected ---
     extra_row = _flipkart_row("FKEXTRA999", date(2026, 9, 15))
@@ -104,8 +103,7 @@ def generate_flipkart() -> None:
 
     # --- write expected (clean) ---
     exp_path = SAMPLES_DIR / "flipkart_orders_expected.csv"
-    exp_fields = ["Seller Order Id", "Order Date", "Product Price",
-                  "Seller Commission", "GST"]
+    exp_fields = ["Seller Order Id", "Order Date", "Product Price", "Seller Commission", "GST"]
     with open(exp_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=exp_fields)
         w.writeheader()
@@ -114,9 +112,16 @@ def generate_flipkart() -> None:
 
     # --- write settlement (with discrepancies) ---
     sett_path = SAMPLES_DIR / "flipkart_settlement.csv"
-    sett_fields = ["Seller Order Id", "Order Date", "Product Price",
-                   "Seller Commission", "GST", "Forward Shipping",
-                   "Discount", "Settlement Amount"]
+    sett_fields = [
+        "Seller Order Id",
+        "Order Date",
+        "Product Price",
+        "Seller Commission",
+        "GST",
+        "Forward Shipping",
+        "Discount",
+        "Settlement Amount",
+    ]
     with open(sett_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=sett_fields)
         w.writeheader()
@@ -125,7 +130,7 @@ def generate_flipkart() -> None:
 
     print(f"Wrote {exp_path} ({len(expected_rows)} clean orders)")
     print(f"Wrote {sett_path} ({len(settlement_rows)} settlement rows)")
-    print(f"  Planted: 2 missing, 1 extra, 2 value, 3 gst, 1 commission")
+    print("  Planted: 2 missing, 1 extra, 2 value, 3 gst, 1 commission")
 
 
 def generate_meesho() -> None:
@@ -142,18 +147,27 @@ def generate_meesho() -> None:
         gst = int(product_value * 0.18)
         discount = random.randint(0, max(1, product_value // 10))
         settlement = product_value - platform_fee + gst + discount
-        rows.append({
-            "Order ID": oid,
-            "Invoice Date": d.isoformat(),
-            "Item Price": product_value,
-            "Platform Fee": platform_fee,
-            "Tax Amount": gst,
-            "Discount": discount,
-            "Settlement Amount": settlement,
-        })
+        rows.append(
+            {
+                "Order ID": oid,
+                "Invoice Date": d.isoformat(),
+                "Item Price": product_value,
+                "Platform Fee": platform_fee,
+                "Tax Amount": gst,
+                "Discount": discount,
+                "Settlement Amount": settlement,
+            }
+        )
     path = SAMPLES_DIR / "meesho_settlement.csv"
-    fields = ["Order ID", "Invoice Date", "Item Price", "Platform Fee",
-              "Tax Amount", "Discount", "Settlement Amount"]
+    fields = [
+        "Order ID",
+        "Invoice Date",
+        "Item Price",
+        "Platform Fee",
+        "Tax Amount",
+        "Discount",
+        "Settlement Amount",
+    ]
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()

@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Build the invoice-diff marketing landing page as a single-file HTML."""
-import base64, os, json
+
+import base64
+import json
+import os
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 SITE = "https://0xshaikh.github.io/invoice-diff"
 
+
 def b64(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
+
 
 # ---------- sample data (real numbers per brief) ----------
 CLI_OUTPUT = """
@@ -575,8 +580,10 @@ HTML = """<!doctype html>
 </html>
 """
 
+
 def esc(s):
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
 
 def hl_ref(src):
     out = []
@@ -585,18 +592,19 @@ def hl_ref(src):
             out.append("")
             continue
         if line.lstrip().startswith("#"):
-            out.append('<span class="k-com">' + esc(line) + '</span>')
+            out.append('<span class="k-com">' + esc(line) + "</span>")
             continue
         parts = []
         for t in line.split():
             if t == "invoice-diff":
-                parts.append('<span class="k-cmd">' + esc(t) + '</span> ')
+                parts.append('<span class="k-cmd">' + esc(t) + "</span> ")
             elif t.startswith("--"):
-                parts.append('<span class="k-flag">' + esc(t) + '</span> ')
+                parts.append('<span class="k-flag">' + esc(t) + "</span> ")
             else:
-                parts.append(esc(t) + ' ')
+                parts.append(esc(t) + " ")
         out.append("".join(parts).rstrip())
     return "\n".join(out)
+
 
 def hl_term(src):
     out = []
@@ -608,11 +616,11 @@ def hl_term(src):
         if line.startswith("$"):
             out.append('<span class="k-cmd">$</span> ' + s[2:])
         elif line.startswith("  \u203a"):
-            out.append('<span class="k-dim">' + s + '</span>')
+            out.append('<span class="k-dim">' + s + "</span>")
         elif line.startswith("\u2500\u2500") and "RECONCILIATION" not in line:
-            out.append('<span class="k-hr">' + s + '</span>')
+            out.append('<span class="k-hr">' + s + "</span>")
         elif "RECONCILIATION REPORT" in line:
-            out.append('<span class="k-hdr">' + s + '</span>')
+            out.append('<span class="k-hdr">' + s + "</span>")
         elif "exported" in line:
             out.append(s.replace("exported", '<span class="k-ok">exported</span>'))
         elif "exit 0" in line:
@@ -624,32 +632,43 @@ def hl_term(src):
         elif "100 / 100" in line:
             out.append(s.replace("100 / 100", '<span class="k-ok">100 / 100</span>'))
         elif line.strip().startswith("GST"):
-            out.append(s.replace("Rs.", '<span class="k-num">Rs.</span>').replace("gst", '<span class="k-warn">gst</span>'))
+            out.append(
+                s.replace("Rs.", '<span class="k-num">Rs.</span>').replace(
+                    "gst", '<span class="k-warn">gst</span>'
+                )
+            )
         elif line.strip().startswith("Invoice") or line.strip().startswith("Payout"):
-            out.append(s.replace("value", '<span class="k-bad">value</span>').replace("missing", '<span class="k-bad">missing</span>'))
+            out.append(
+                s.replace("value", '<span class="k-bad">value</span>').replace(
+                    "missing", '<span class="k-bad">missing</span>'
+                )
+            )
         elif line.strip().startswith("ORDER"):
-            out.append('<span class="k-dim">' + s + '</span>')
+            out.append('<span class="k-dim">' + s + "</span>")
         else:
             out.append(s)
     return "\n".join(out)
 
-LDJSON = json.dumps({
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "invoice-diff",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Linux, macOS, Windows (WSL)",
-    "description": "Python CLI that parses Flipkart, Meesho and Amazon.in invoices, reconciles them against payouts and surfaces GST, value and missing-order discrepancies.",
-    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-    "license": "https://opensource.org/licenses/MIT",
-    "url": "https://0xshaikh.github.io/invoice-diff",
-    "sourceCode": "https://github.com/0xshaikh/invoice-diff",
-    "author": {"@type": "Person", "name": "0xshaikh", "url": "https://github.com/0xshaikh"},
-    "runtimePlatform": "Python 3.10+",
-})
 
-HTML = (HTML
-    .replace("__SITE__", SITE)
+LDJSON = json.dumps(
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "invoice-diff",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Linux, macOS, Windows (WSL)",
+        "description": "Python CLI that parses Flipkart, Meesho and Amazon.in invoices, reconciles them against payouts and surfaces GST, value and missing-order discrepancies.",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://0xshaikh.github.io/invoice-diff",
+        "sourceCode": "https://github.com/0xshaikh/invoice-diff",
+        "author": {"@type": "Person", "name": "0xshaikh", "url": "https://github.com/0xshaikh"},
+        "runtimePlatform": "Python 3.10+",
+    }
+)
+
+HTML = (
+    HTML.replace("__SITE__", SITE)
     .replace("__CSS__", CSS)
     .replace("__LDJSON__", LDJSON)
     .replace("__HLREF__", hl_ref(CLI_REF))

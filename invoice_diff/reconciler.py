@@ -46,8 +46,9 @@ def reconcile(settlement: pd.DataFrame, expected: pd.DataFrame) -> dict[str, Any
           - ``mismatches``: DataFrame of discrepancies
           - ``summary``: dict of aggregate counts (see module docstring)
     """
-    expected = _ensure_fields(expected, _COMPARE_FIELDS + ["Order_ID"])
-    settlement = _ensure_fields(settlement, _COMPARE_FIELDS + ["Order_ID"])
+    compare_fields = [*_COMPARE_FIELDS, "Order_ID"]
+    expected = _ensure_fields(expected, compare_fields)
+    settlement = _ensure_fields(settlement, compare_fields)
 
     # Normalize ID dtype to str
     expected = expected.copy()
@@ -67,26 +68,30 @@ def reconcile(settlement: pd.DataFrame, expected: pd.DataFrame) -> dict[str, Any
     # --- Missing in settlement ---
     for oid in sorted(missing_ids):
         row = expected[expected["Order_ID"] == oid].iloc[0]
-        mismatches.append({
-            "Order_ID": oid,
-            "Type": MISSING_IN_SETTLEMENT,
-            "Expected_Value": int(row.get("Product_Value", 0) or 0),
-            "Settlement_Value": 0,
-            "Difference": int(row.get("Product_Value", 0) or 0),
-            "Note": "Order present in expected but absent from settlement",
-        })
+        mismatches.append(
+            {
+                "Order_ID": oid,
+                "Type": MISSING_IN_SETTLEMENT,
+                "Expected_Value": int(row.get("Product_Value", 0) or 0),
+                "Settlement_Value": 0,
+                "Difference": int(row.get("Product_Value", 0) or 0),
+                "Note": "Order present in expected but absent from settlement",
+            }
+        )
 
     # --- Extra in settlement ---
     for oid in sorted(extra_ids):
         row = settlement[settlement["Order_ID"] == oid].iloc[0]
-        mismatches.append({
-            "Order_ID": oid,
-            "Type": EXTRA_IN_SETTLEMENT,
-            "Expected_Value": 0,
-            "Settlement_Value": int(row.get("Product_Value", 0) or 0),
-            "Difference": int(row.get("Product_Value", 0) or 0),
-            "Note": "Order in settlement but not in expected order report",
-        })
+        mismatches.append(
+            {
+                "Order_ID": oid,
+                "Type": EXTRA_IN_SETTLEMENT,
+                "Expected_Value": 0,
+                "Settlement_Value": int(row.get("Product_Value", 0) or 0),
+                "Difference": int(row.get("Product_Value", 0) or 0),
+                "Note": "Order in settlement but not in expected order report",
+            }
+        )
 
     # --- Field-level comparisons on common orders ---
     value_mismatch_count = 0
@@ -116,25 +121,29 @@ def reconcile(settlement: pd.DataFrame, expected: pd.DataFrame) -> dict[str, Any
         if abs(diff) > TOLERANCE_RUPEES:
             value_mismatch_count += 1
             value_mismatch_amount += abs(diff)
-            mismatches.append({
-                "Order_ID": oid,
-                "Type": VALUE_MISMATCH,
-                "Expected_Value": ev,
-                "Settlement_Value": sv,
-                "Difference": diff,
-                "Note": f"Product value differs by Rs.{abs(diff)}",
-            })
+            mismatches.append(
+                {
+                    "Order_ID": oid,
+                    "Type": VALUE_MISMATCH,
+                    "Expected_Value": ev,
+                    "Settlement_Value": sv,
+                    "Difference": diff,
+                    "Note": f"Product value differs by Rs.{abs(diff)}",
+                }
+            )
         elif diff != 0:
             # small rounding drift
             rounded_off_count += 1
-            mismatches.append({
-                "Order_ID": oid,
-                "Type": ROUNDED_OFF,
-                "Expected_Value": ev,
-                "Settlement_Value": sv,
-                "Difference": diff,
-                "Note": f"Sub-rupee / rounding drift of Rs.{abs(diff)}",
-            })
+            mismatches.append(
+                {
+                    "Order_ID": oid,
+                    "Type": ROUNDED_OFF,
+                    "Expected_Value": ev,
+                    "Settlement_Value": sv,
+                    "Difference": diff,
+                    "Note": f"Sub-rupee / rounding drift of Rs.{abs(diff)}",
+                }
+            )
 
         # --- GST mismatch ---
         eg = int(e.get("GST_Amount", 0) or 0)
@@ -143,14 +152,16 @@ def reconcile(settlement: pd.DataFrame, expected: pd.DataFrame) -> dict[str, Any
         if gdiff != 0:
             gst_mismatch_count += 1
             gst_mismatch_amount += abs(gdiff)
-            mismatches.append({
-                "Order_ID": oid,
-                "Type": GST_MISMATCH,
-                "Expected_Value": eg,
-                "Settlement_Value": sg,
-                "Difference": gdiff,
-                "Note": f"GST differs by Rs.{abs(gdiff)} (platform may have recalculated)",
-            })
+            mismatches.append(
+                {
+                    "Order_ID": oid,
+                    "Type": GST_MISMATCH,
+                    "Expected_Value": eg,
+                    "Settlement_Value": sg,
+                    "Difference": gdiff,
+                    "Note": f"GST differs by Rs.{abs(gdiff)} (platform may have recalculated)",
+                }
+            )
 
         # --- Commission mismatch ---
         ec = int(e.get("Commission", 0) or 0)
@@ -158,39 +169,46 @@ def reconcile(settlement: pd.DataFrame, expected: pd.DataFrame) -> dict[str, Any
         cdiff = sc - ec
         if cdiff != 0:
             commission_mismatch_count += 1
-            mismatches.append({
-                "Order_ID": oid,
-                "Type": COMMISSION_MISMATCH,
-                "Expected_Value": ec,
-                "Settlement_Value": sc,
-                "Difference": cdiff,
-                "Note": f"Commission differs by Rs.{abs(cdiff)} (rate off)",
-            })
+            mismatches.append(
+                {
+                    "Order_ID": oid,
+                    "Type": COMMISSION_MISMATCH,
+                    "Expected_Value": ec,
+                    "Settlement_Value": sc,
+                    "Difference": cdiff,
+                    "Note": f"Commission differs by Rs.{abs(cdiff)} (rate off)",
+                }
+            )
 
     mismatches_df = pd.DataFrame(
         mismatches,
-        columns=["Order_ID", "Type", "Expected_Value", "Settlement_Value",
-                 "Difference", "Note"],
+        columns=["Order_ID", "Type", "Expected_Value", "Settlement_Value", "Difference", "Note"],
     )
     if mismatches_df.empty:
         mismatches_df = pd.DataFrame(
-            columns=["Order_ID", "Type", "Expected_Value", "Settlement_Value",
-                     "Difference", "Note"],
+            columns=[
+                "Order_ID",
+                "Type",
+                "Expected_Value",
+                "Settlement_Value",
+                "Difference",
+                "Note",
+            ],
         )
 
     summary = {
-        "total_orders_in_settlement": int(len(sett_ids)),
-        "total_orders_in_expected": int(len(exp_ids)),
-        "matched": int(len(common_ids)),
-        "missing_in_settlement": int(len(missing_ids)),
-        "extra_in_settlement": int(len(extra_ids)),
+        "total_orders_in_settlement": len(sett_ids),
+        "total_orders_in_expected": len(exp_ids),
+        "matched": len(common_ids),
+        "missing_in_settlement": len(missing_ids),
+        "extra_in_settlement": len(extra_ids),
         "value_mismatch_count": int(value_mismatch_count),
         "value_mismatch_amount": int(value_mismatch_amount),
         "gst_mismatch_count": int(gst_mismatch_count),
         "gst_mismatch_amount": int(gst_mismatch_amount),
         "commission_mismatch_count": int(commission_mismatch_count),
         "rounded_off_count": int(rounded_off_count),
-        "total_discrepancies": int(len(mismatches)),
+        "total_discrepancies": len(mismatches),
     }
 
     return {"mismatches": mismatches_df, "summary": summary}

@@ -194,10 +194,30 @@ def all_discrepancies_result(flipkart_csv: Path) -> dict:
     expected = _normalize_expected(
         pd.DataFrame(
             [
-                {"Seller Order Id": "FK770487", "Product Price": 4000, "Seller Commission": 720, "GST": 864},
-                {"Seller Order Id": "FK881122", "Product Price": 1000, "Seller Commission": 150, "GST": 180},
-                {"Seller Order Id": "FK990011", "Product Price": 2500, "Seller Commission": 375, "GST": 400},
-                {"Seller Order Id": "FK999999", "Product Price": 250, "Seller Commission": 37, "GST": 45},
+                {
+                    "Seller Order Id": "FK770487",
+                    "Product Price": 4000,
+                    "Seller Commission": 720,
+                    "GST": 864,
+                },
+                {
+                    "Seller Order Id": "FK881122",
+                    "Product Price": 1000,
+                    "Seller Commission": 150,
+                    "GST": 180,
+                },
+                {
+                    "Seller Order Id": "FK990011",
+                    "Product Price": 2500,
+                    "Seller Commission": 375,
+                    "GST": 400,
+                },
+                {
+                    "Seller Order Id": "FK999999",
+                    "Product Price": 250,
+                    "Seller Commission": 37,
+                    "GST": 45,
+                },
             ]
         )
     )
@@ -209,9 +229,7 @@ def all_discrepancies_result(flipkart_csv: Path) -> dict:
 # ---------------------------------------------------------------------------
 def assert_universal_schema(df: pd.DataFrame) -> None:
     """Assert ``df`` has exactly the universal schema, in order."""
-    assert list(df.columns) == UNIVERSAL_COLUMNS, (
-        f"Unexpected columns: {list(df.columns)}"
-    )
+    assert list(df.columns) == UNIVERSAL_COLUMNS, f"Unexpected columns: {list(df.columns)}"
 
 
 def result_types(result: dict) -> list[str]:

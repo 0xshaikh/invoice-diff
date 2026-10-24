@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -68,7 +66,9 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     market = df["Marketplace"].mode().iloc[0] if not df.empty else "?"
     print(_colorize(f"Parsed {len(df):,} orders from {args.input}", "cyan", color))
     print(f"  Marketplace:     {_colorize(market, 'green', color)}")
-    print(f"  Date range:      {df['Invoice_Date'].min() or '(none)'} to {df['Invoice_Date'].max() or '(none)'}")
+    print(
+        f"  Date range:      {df['Invoice_Date'].min() or '(none)'} to {df['Invoice_Date'].max() or '(none)'}"
+    )
     print(f"  Total Product:   Rs.{df['Product_Value'].sum():,}")
     print(f"  Total Commission:Rs.{df['Commission'].sum():,}")
     print(f"  Total GST:       Rs.{df['GST_Amount'].sum():,}")
@@ -91,7 +91,9 @@ def _cmd_reconcile(args: argparse.Namespace) -> int:
     # Expected may be a raw order report; be lenient
     try:
         expected = pd.read_csv(args.expected, dtype=str, keep_default_na=False, na_values=[""])
-        expected = expected.apply(lambda col: col.map(lambda v: v.strip() if isinstance(v, str) else v))
+        expected = expected.apply(
+            lambda col: col.map(lambda v: v.strip() if isinstance(v, str) else v)
+        )
     except FileNotFoundError as e:
         print(_colorize(f"Error: {e}", "red", color), file=sys.stderr)
         return 2
@@ -131,11 +133,17 @@ def _cmd_reconcile(args: argparse.Namespace) -> int:
     width = max(len(r[0]) for r in rows)
     for label, val in rows:
         shown = f"Rs.{val:,}" if "amount" in label.lower() else f"{val:,}"
-        if isinstance(val, int) and val > 0 and label not in (
-                "Orders in settlement", "Orders in expected", "Matched"):
+        if (
+            isinstance(val, int)
+            and val > 0
+            and label not in ("Orders in settlement", "Orders in expected", "Matched")
+        ):
             shown_s = _colorize(shown, "red", color)
-        elif isinstance(val, int) and val == 0 and label not in (
-                "Orders in settlement", "Orders in expected"):
+        elif (
+            isinstance(val, int)
+            and val == 0
+            and label not in ("Orders in settlement", "Orders in expected")
+        ):
             shown_s = _colorize(shown, "green", color)
         else:
             shown_s = shown
@@ -177,21 +185,35 @@ def _normalize_expected(df: pd.DataFrame) -> pd.DataFrame:
                     return orig
         return None
 
-    oid_col = _find(["order id", "orderid", "order_id", "seller order id",
-                     "order number", "order#"])
+    oid_col = _find(
+        ["order id", "orderid", "order_id", "seller order id", "order number", "order#"]
+    )
     if oid_col:
         out["Order_ID"] = out[oid_col].map(_to_order_id)
     elif "Order_ID" in out.columns:
         out["Order_ID"] = out["Order_ID"].map(_to_order_id)
     else:
-        raise ValueError(f"Expected report has no recognizable Order_ID column. Columns: {list(df.columns)}")
+        raise ValueError(
+            f"Expected report has no recognizable Order_ID column. Columns: {list(df.columns)}"
+        )
 
-    pv_col = _find(["product price", "item price", "price", "price per unit",
-                    "mrp", "sale price", "product value", "priceperunit"])
+    pv_col = _find(
+        [
+            "product price",
+            "item price",
+            "price",
+            "price per unit",
+            "mrp",
+            "sale price",
+            "product value",
+            "priceperunit",
+        ]
+    )
     out["Product_Value"] = out[pv_col].map(_to_int) if pv_col else 0
 
-    c_col = _find(["commission", "seller commission", "platform fee",
-                   "platform charges", "referral fee"])
+    c_col = _find(
+        ["commission", "seller commission", "platform fee", "platform charges", "referral fee"]
+    )
     out["Commission"] = out[c_col].map(_to_int) if c_col else 0
 
     gst_col = _find(["gst", "tax", "tax amount", "total tax", "igst"])
@@ -221,17 +243,23 @@ def _cmd_check(args: argparse.Namespace) -> int:
     print(f"  Negative Product: {(df['Product_Value'] < 0).sum()}")
     print(f"  Negative GST:     {(df['GST_Amount'] < 0).sum()}")
     # settlement vs (product - commission - shipping + discount + gst) sanity
-    expected_settle = (df["Product_Value"] - df["Commission"]
-                       - df["Forward_Shipping"] - df["Reverse_Shipping"]
-                       + df["Discount"] + df["GST_Amount"])
+    expected_settle = (
+        df["Product_Value"]
+        - df["Commission"]
+        - df["Forward_Shipping"]
+        - df["Reverse_Shipping"]
+        + df["Discount"]
+        + df["GST_Amount"]
+    )
     drift = (df["Settlement_Amount"] - expected_settle).abs()
     big_drift = (drift > 1).sum()
     print(f"  Settlement drift >Rs.1: {big_drift}")
     if big_drift == 0:
         print(_colorize("  => Settlement arithmetic looks consistent.", "green", color))
     else:
-        print(_colorize(f"  => {big_drift} orders have settlement arithmetic drift.",
-                        "yellow", color))
+        print(
+            _colorize(f"  => {big_drift} orders have settlement arithmetic drift.", "yellow", color)
+        )
     return 0 if big_drift == 0 else 1
 
 
@@ -255,8 +283,13 @@ def build_parser() -> argparse.ArgumentParser:
     pr = sub.add_parser("reconcile", help="Reconcile settlement against expected orders")
     pr.add_argument("--settlement", "-s", required=True, help="Settlement CSV")
     pr.add_argument("--expected", "-e", required=True, help="Expected orders CSV")
-    pr.add_argument("--format", "-f", choices=["json", "csv", "md", "xlsx"],
-                    default="json", help="Report format (default: json)")
+    pr.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "csv", "md", "xlsx"],
+        default="json",
+        help="Report format (default: json)",
+    )
     pr.add_argument("--out", "-o", default=None, help="Output path (optional)")
     pr.set_defaults(func=_cmd_reconcile)
 
@@ -275,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("Interrupted.", file=sys.stderr)
         return 2
-    except Exception as e:  # noqa: BLE001 - top-level safety net
+    except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         return 2
 

@@ -10,9 +10,8 @@ All monetary values are integers in rupees (round to nearest rupee).
 
 from __future__ import annotations
 
-import csv
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,63 +23,167 @@ import pandas as pd
 
 SYNONYMS: dict[str, list[str]] = {
     "Order_ID": [
-        "order id", "orderid", "order_id", "seller order id", "seller order id",
-        "sellerorderid", "order number", "order no", "order_no", "orderno",
-        "parent order id", "order# ", "order #", "order",
+        "order id",
+        "orderid",
+        "order_id",
+        "seller order id",
+        "seller order id",
+        "sellerorderid",
+        "order number",
+        "order no",
+        "order_no",
+        "orderno",
+        "parent order id",
+        "order# ",
+        "order #",
+        "order",
     ],
     "Marketplace": [
-        "marketplace", "platform", "channel", "source", "seller marketplace",
+        "marketplace",
+        "platform",
+        "channel",
+        "source",
+        "seller marketplace",
     ],
     "Invoice_Date": [
-        "invoice date", "invoicedate", "invoice_date", "order date",
-        "orderdate", "order_date", "settlement date", "settlementdate",
-        "settlement_date", "transaction date", "txn date", "date",
-        "shipment date", "shipdate",
+        "invoice date",
+        "invoicedate",
+        "invoice_date",
+        "order date",
+        "orderdate",
+        "order_date",
+        "settlement date",
+        "settlementdate",
+        "settlement_date",
+        "transaction date",
+        "txn date",
+        "date",
+        "shipment date",
+        "shipdate",
     ],
     "Product_Value": [
-        "product price", "product price", "product price", "item price",
-        "itemprice", "item_price", "product value", "product_value",
-        "price per unit", "priceperunit", "price_per_unit", "price",
-        "mrp", "unit price", "unitprice", "unit_price", "sale price",
-        "saleprice", "sale_price", "item amount", "itemamount", "gross amount",
+        "product price",
+        "product price",
+        "product price",
+        "item price",
+        "itemprice",
+        "item_price",
+        "product value",
+        "product_value",
+        "price per unit",
+        "priceperunit",
+        "price_per_unit",
+        "price",
+        "mrp",
+        "unit price",
+        "unitprice",
+        "unit_price",
+        "sale price",
+        "saleprice",
+        "sale_price",
+        "item amount",
+        "itemamount",
+        "gross amount",
     ],
     "Commission": [
-        "seller commission", "sellercommission", "seller_commission",
-        "commission", "platform fee", "platformfee", "platform_fee",
-        "platform charges", "platformcharges", "commission amount",
-        "commissionamount", "commission_amount", "referral fee",
-        "referralfee", "referral_fee",
+        "seller commission",
+        "sellercommission",
+        "seller_commission",
+        "commission",
+        "platform fee",
+        "platformfee",
+        "platform_fee",
+        "platform charges",
+        "platformcharges",
+        "commission amount",
+        "commissionamount",
+        "commission_amount",
+        "referral fee",
+        "referralfee",
+        "referral_fee",
     ],
     "GST_Amount": [
-        "gst", "tax amount", "taxamount", "tax_amount", "tax",
-        "gst amount", "gstamount", "gst_amount", "igst", "cgst+sgst",
-        "total tax", "totaltax", "total_tax", "taxable amount",
+        "gst",
+        "tax amount",
+        "taxamount",
+        "tax_amount",
+        "tax",
+        "gst amount",
+        "gstamount",
+        "gst_amount",
+        "igst",
+        "cgst+sgst",
+        "total tax",
+        "totaltax",
+        "total_tax",
+        "taxable amount",
     ],
     "Forward_Shipping": [
-        "forward shipping", "forwardshipping", "forward_shipping",
-        "shipping", "shipping fee", "shippingfee", "shipping_fee",
-        "shipping charge", "shippingcharge", "shipping_charge",
-        "dispatch fee", "dispatchfee", "logistics",
+        "forward shipping",
+        "forwardshipping",
+        "forward_shipping",
+        "shipping",
+        "shipping fee",
+        "shippingfee",
+        "shipping_fee",
+        "shipping charge",
+        "shippingcharge",
+        "shipping_charge",
+        "dispatch fee",
+        "dispatchfee",
+        "logistics",
     ],
     "Reverse_Shipping": [
-        "reverse shipping", "reverseshipping", "reverse_shipping",
-        "return shipping", "returnshipping", "return_shipping",
-        "return charge", "returncharge", "return_charge",
-        "reverse logistics", "reverselogistics",
+        "reverse shipping",
+        "reverseshipping",
+        "reverse_shipping",
+        "return shipping",
+        "returnshipping",
+        "return_shipping",
+        "return charge",
+        "returncharge",
+        "return_charge",
+        "reverse logistics",
+        "reverselogistics",
     ],
     "Discount": [
-        "discount", "coupon", "coupon amount", "couponamount",
-        "coupon_amount", "promo", "promotion", "offer", "offer amount",
-        "offeramount", "offer_amount", "seller discount", "sellerdiscount",
-        "seller_discount", "platform discount", "platformdiscount",
+        "discount",
+        "coupon",
+        "coupon amount",
+        "couponamount",
+        "coupon_amount",
+        "promo",
+        "promotion",
+        "offer",
+        "offer amount",
+        "offeramount",
+        "offer_amount",
+        "seller discount",
+        "sellerdiscount",
+        "seller_discount",
+        "platform discount",
+        "platformdiscount",
         "platform_discount",
     ],
     "Settlement_Amount": [
-        "settlement amount", "settlementamount", "settlement_amount",
-        "net amount", "netamount", "net_amount", "amount payable",
-        "amountpayable", "amount_payable", "payable", "settlement",
-        "remittance", "remittance amount", "remittanceamount",
-        "remittance_amount", "final amount", "finalamount", "final_amount",
+        "settlement amount",
+        "settlementamount",
+        "settlement_amount",
+        "net amount",
+        "netamount",
+        "net_amount",
+        "amount payable",
+        "amountpayable",
+        "amount_payable",
+        "payable",
+        "settlement",
+        "remittance",
+        "remittance amount",
+        "remittanceamount",
+        "remittance_amount",
+        "final amount",
+        "finalamount",
+        "final_amount",
     ],
 }
 
@@ -117,7 +220,7 @@ def _detect_columns(header: list[str]) -> dict[str, str]:
             for syn in syns:
                 target = _normalize(syn)
                 for i, n in normed:
-                    if n.startswith(target) or target.startswith(n) and len(n) > 4:
+                    if n.startswith(target) or (target.startswith(n) and len(n) > 4):
                         mapping[field] = header[i]
                         break
                 if field in mapping:
@@ -141,8 +244,7 @@ def _detect_marketplace(header: list[str], df: pd.DataFrame) -> str:
     # 1. explicit literal Marketplace/Platform column with a known value
     for c in header:
         if _normalize(c) in ("marketplace", "platform", "channel", "source"):
-            vals = (df[c].astype(str).str.strip().str.lower().unique()
-                    if len(df) else [])
+            vals = df[c].astype(str).str.strip().str.lower().unique() if len(df) else []
             for v in vals:
                 if v in ("flipkart", "meesho", "amazon"):
                     return v.capitalize()
@@ -150,11 +252,12 @@ def _detect_marketplace(header: list[str], df: pd.DataFrame) -> str:
     # 2. distinctive export-format columns
     if "orderid" in normed:
         return "Amazon"
-    if any(n in normed for n in ("item price", "platform fee",
-                                 "platformcharges", "tax amount")):
+    if any(n in normed for n in ("item price", "platform fee", "platformcharges", "tax amount")):
         return "Meesho"
-    if any(n in normed for n in ("seller order id", "seller commission",
-                                 "settlement amount", "sellerorderid")):
+    if any(
+        n in normed
+        for n in ("seller order id", "seller commission", "settlement amount", "sellerorderid")
+    ):
         return "Flipkart"
 
     # 3. last resort: an obvious marker in any column name
@@ -179,10 +282,12 @@ def _to_int(v: Any) -> int:
         return 0
     if isinstance(v, bool):
         return 0
-    if isinstance(v, (int, float)):
+    if isinstance(v, int):
+        return v
+    if isinstance(v, float):
         if pd.isna(v):
             return 0
-        return int(round(float(v)))
+        return int(round(v))  # noqa: RUF046 — bool excluded above
 
     s = str(v).strip()
     if not s or s.lower() in {"-", "--", "nan", "none", "na", "n/a"}:
@@ -190,14 +295,14 @@ def _to_int(v: Any) -> int:
 
     # strip currency symbols / thousands separators *before* reading the sign,
     # so both "-50" and "Rs. -50" are detected as negative
-    s = (s.replace(",", "").replace("₹", "")
-         .replace("Rs.", "").replace("Rs ", "").replace(" ", ""))
+    s = s.replace(",", "").replace("₹", "").replace("Rs.", "").replace("Rs ", "").replace(" ", "")
     neg = s.startswith("-")
     m = re.search(r"\d+(\.\d+)?", s)
     if not m:
         return 0
     val = float(m.group(0))
-    return -int(round(val)) if neg else int(round(val))
+    r = round(val)  # type: ignore[assignment]  # round() returns int for float input
+    return -r if neg else r
 
 
 def _to_date(v: Any) -> str:
@@ -217,10 +322,9 @@ def _to_date(v: Any) -> str:
     except Exception:
         pass
     # manual patterns
-    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%Y-%m-%d",
-                "%m/%d/%Y", "%d %b %Y", "%d %B %Y"):
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%Y-%m-%d", "%m/%d/%Y", "%d %b %Y", "%d %B %Y"):
         try:
-            return datetime.strptime(s[:len(s)], fmt).date().isoformat()
+            return datetime.strptime(s[: len(s)], fmt).date().isoformat()
         except ValueError:
             continue
     m = re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})", s)
@@ -268,9 +372,7 @@ def parse_settlement(path: str | Path) -> pd.DataFrame:
     mapping = _detect_columns(header)
 
     if "Order_ID" not in mapping:
-        raise ValueError(
-            f"Could not detect an Order_ID column. Detected columns: {header}"
-        )
+        raise ValueError(f"Could not detect an Order_ID column. Detected columns: {header}")
 
     marketplace = _detect_marketplace(header, df_raw)
 
@@ -285,8 +387,13 @@ def parse_settlement(path: str | Path) -> pd.DataFrame:
     out["Marketplace"] = marketplace
 
     int_fields = [
-        "Product_Value", "Commission", "GST_Amount", "Forward_Shipping",
-        "Reverse_Shipping", "Discount", "Settlement_Amount",
+        "Product_Value",
+        "Commission",
+        "GST_Amount",
+        "Forward_Shipping",
+        "Reverse_Shipping",
+        "Discount",
+        "Settlement_Amount",
     ]
     for f in int_fields:
         if f in mapping:
@@ -303,17 +410,35 @@ def parse_settlement(path: str | Path) -> pd.DataFrame:
     out = out.reset_index(drop=True)
     out["Settled_On"] = ""  # placeholder, kept for future
     # Reorder columns
-    cols = ["Order_ID", "Marketplace", "Invoice_Date", "Product_Value",
-            "Commission", "GST_Amount", "Forward_Shipping",
-            "Reverse_Shipping", "Discount", "Settlement_Amount"]
+    cols = [
+        "Order_ID",
+        "Marketplace",
+        "Invoice_Date",
+        "Product_Value",
+        "Commission",
+        "GST_Amount",
+        "Forward_Shipping",
+        "Reverse_Shipping",
+        "Discount",
+        "Settlement_Amount",
+    ]
     out = out[cols]
     return out
 
 
 def _empty_result() -> pd.DataFrame:
-    cols = ["Order_ID", "Marketplace", "Invoice_Date", "Product_Value",
-            "Commission", "GST_Amount", "Forward_Shipping",
-            "Reverse_Shipping", "Discount", "Settlement_Amount"]
+    cols = [
+        "Order_ID",
+        "Marketplace",
+        "Invoice_Date",
+        "Product_Value",
+        "Commission",
+        "GST_Amount",
+        "Forward_Shipping",
+        "Reverse_Shipping",
+        "Discount",
+        "Settlement_Amount",
+    ]
     return pd.DataFrame({c: [] for c in cols})
 
 
@@ -331,19 +456,39 @@ def parse_settlement_from_records(records: list[dict[str, Any]]) -> pd.DataFrame
     rows = []
     for r in records:
         row: dict[str, Any] = {
-            "Order_ID": _to_order_id(r.get("Order_ID") or r.get("order_id")
-                                     or r.get("OrderID") or r.get("orderid", "")),
+            "Order_ID": _to_order_id(
+                r.get("Order_ID") or r.get("order_id") or r.get("OrderID") or r.get("orderid", "")
+            ),
             "Marketplace": r.get("Marketplace", r.get("marketplace", "")),
-            "Invoice_Date": _to_date(r.get("Invoice_Date") or r.get("invoice_date")
-                                     or r.get("Order_Date") or r.get("order_date", "")),
+            "Invoice_Date": _to_date(
+                r.get("Invoice_Date")
+                or r.get("invoice_date")
+                or r.get("Order_Date")
+                or r.get("order_date", "")
+            ),
         }
-        for f in ["Product_Value", "Commission", "GST_Amount",
-                  "Forward_Shipping", "Reverse_Shipping", "Discount",
-                  "Settlement_Amount"]:
+        for f in [
+            "Product_Value",
+            "Commission",
+            "GST_Amount",
+            "Forward_Shipping",
+            "Reverse_Shipping",
+            "Discount",
+            "Settlement_Amount",
+        ]:
             low = f.lower().replace("_", "")
             row[f] = _to_int(r.get(f, r.get(low, 0)))
         rows.append(row)
-    cols = ["Order_ID", "Marketplace", "Invoice_Date", "Product_Value",
-            "Commission", "GST_Amount", "Forward_Shipping",
-            "Reverse_Shipping", "Discount", "Settlement_Amount"]
+    cols = [
+        "Order_ID",
+        "Marketplace",
+        "Invoice_Date",
+        "Product_Value",
+        "Commission",
+        "GST_Amount",
+        "Forward_Shipping",
+        "Reverse_Shipping",
+        "Discount",
+        "Settlement_Amount",
+    ]
     return pd.DataFrame(rows, columns=cols)

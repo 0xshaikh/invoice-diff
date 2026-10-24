@@ -48,44 +48,62 @@ def _mismatch_rows(result: dict) -> list[dict]:
 # ===========================================================================
 class TestJsonExport:
     def test_writes_file_and_returns_path(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         assert returned.endswith(".json")
         assert Path(returned).exists()
 
     def test_valid_json(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         assert isinstance(payload, dict)
 
     def test_top_level_keys(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         assert set(payload) == {"generated_at", "summary", "mismatches"}
 
     def test_summary_round_trips(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         assert payload["summary"] == all_discrepancies_result["summary"]
 
-    def test_mismatches_round_trip_row_count(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+    def test_mismatches_round_trip_row_count(
+        self, all_discrepancies_result, tmp_path: Path
+    ) -> None:
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         assert len(payload["mismatches"]) == len(all_discrepancies_result["mismatches"])
 
     def test_discrepancy_types_preserved(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         types = {row["Type"] for row in payload["mismatches"]}
         assert types >= ALL_TYPES
 
     def test_order_ids_preserved(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         ids = {row["Order_ID"] for row in payload["mismatches"]}
         assert {"FKEXTRA", "FK999999"} <= ids
 
     def test_generated_at_is_iso8601(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="json", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="json", out_path=tmp_path / "r.json"
+        )
         payload = json.loads(Path(returned).read_text(encoding="utf-8"))
         # datetime.isoformat() with a trailing Z
         assert payload["generated_at"].endswith("Z")
@@ -102,25 +120,35 @@ class TestJsonExport:
 # ===========================================================================
 class TestCsvExport:
     def test_writes_file(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         assert returned.endswith(".csv")
         assert Path(returned).exists()
 
-    def test_starts_with_summary_comment_block(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+    def test_starts_with_summary_comment_block(
+        self, all_discrepancies_result, tmp_path: Path
+    ) -> None:
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         lines = Path(returned).read_text(encoding="utf-8").splitlines()
         assert lines[0].startswith("# ")
         assert any(line.startswith("# total_orders_in_settlement") for line in lines)
 
     def test_header_row_present(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         lines = Path(returned).read_text(encoding="utf-8").splitlines()
         assert lines[-len(lines)] != ""  # sanity
         assert any(line.startswith("Order_ID,Type,") for line in lines)
 
     def test_mismatch_row_count(self, all_discrepancies_result, tmp_path: Path) -> None:
         """Read the file skipping the ``#`` summary block and the blank line."""
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         lines = Path(returned).read_text(encoding="utf-8").splitlines()
         body = [ln for ln in lines if ln and not ln.startswith("#")]
         header, rows = body[0], body[1:]
@@ -128,28 +156,45 @@ class TestCsvExport:
         assert len(rows) == len(all_discrepancies_result["mismatches"])
 
     def test_all_types_present_in_csv(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         text = Path(returned).read_text(encoding="utf-8")
         for t in ALL_TYPES:
             assert t in text
 
     def test_all_types_parseable(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
-        lines = [ln for ln in Path(returned).read_text().splitlines() if ln and not ln.startswith("#")]
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
+        lines = [
+            ln for ln in Path(returned).read_text().splitlines() if ln and not ln.startswith("#")
+        ]
         df = pd.read_csv(StringIO("\n".join(lines)))
         assert len(df) == len(all_discrepancies_result["mismatches"])
-        assert set(df.columns) == {"Order_ID", "Type", "Expected_Value", "Settlement_Value", "Difference", "Note"}
+        assert set(df.columns) == {
+            "Order_ID",
+            "Type",
+            "Expected_Value",
+            "Settlement_Value",
+            "Difference",
+            "Note",
+        }
         assert set(df["Type"]) >= ALL_TYPES
 
     def test_summary_values_written(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         text = Path(returned).read_text(encoding="utf-8")
         expected_total = all_discrepancies_result["summary"]["total_discrepancies"]
         assert f"# total_discrepancies,{expected_total}" in text
 
     def test_summary_keys_all_present(self, all_discrepancies_result, tmp_path: Path) -> None:
         """Every summary metric from the reconciler reaches the CSV comment block."""
-        returned = export_report(all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv")
+        returned = export_report(
+            all_discrepancies_result, format="csv", out_path=tmp_path / "r.csv"
+        )
         text = Path(returned).read_text(encoding="utf-8")
         for key in all_discrepancies_result["summary"]:
             assert f"# {key}," in text
@@ -214,27 +259,35 @@ class TestMarkdownExport:
 # ===========================================================================
 class TestXlsxExport:
     def test_writes_file(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx")
+        returned = export_report(
+            all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx"
+        )
         assert returned.endswith(".xlsx")
         assert Path(returned).exists()
         assert Path(returned).stat().st_size > 0
 
     def test_xlsx_is_readable_by_pandas(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx")
+        returned = export_report(
+            all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx"
+        )
         sheets = pd.read_excel(returned, sheet_name=None)
         assert isinstance(sheets, dict)
         assert len(sheets) >= 1
 
     def test_xlsx_total_row_count(self, all_discrepancies_result, tmp_path: Path) -> None:
         """Across all sheets the mismatch rows must be accounted for."""
-        returned = export_report(all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx")
+        returned = export_report(
+            all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx"
+        )
         sheets = pd.read_excel(returned, sheet_name=None)
         total = sum(len(df) for df in sheets.values())
         # A summary sheet may add rows; mismatch rows themselves must be present.
         assert total >= len(all_discrepancies_result["mismatches"])
 
     def test_xlsx_has_discrepancy_type_info(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx")
+        returned = export_report(
+            all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx"
+        )
         sheets = pd.read_excel(returned, sheet_name=None)
         # Either a Type column somewhere or type-named sheets — accept either.
         has_type_col = any("Type" in df.columns for df in sheets.values())
@@ -244,7 +297,9 @@ class TestXlsxExport:
         assert has_type_col or has_type_sheets
 
     def test_xlsx_discrepancy_ids_readable(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx")
+        returned = export_report(
+            all_discrepancies_result, format="xlsx", out_path=tmp_path / "r.xlsx"
+        )
         sheets = pd.read_excel(returned, sheet_name=None)
         all_ids = set()
         for df in sheets.values():
@@ -278,10 +333,14 @@ class TestExportEdgeCases:
         assert "pdf" in str(excinfo.value)
 
     def test_format_is_case_insensitive(self, all_discrepancies_result, tmp_path: Path) -> None:
-        returned = export_report(all_discrepancies_result, format="JSON", out_path=tmp_path / "r.json")
+        returned = export_report(
+            all_discrepancies_result, format="JSON", out_path=tmp_path / "r.json"
+        )
         assert json.loads(Path(returned).read_text(encoding="utf-8"))["mismatches"]
 
-    def test_out_path_none_writes_under_reports_dir(self, all_discrepancies_result, tmp_path: Path, monkeypatch) -> None:
+    def test_out_path_none_writes_under_reports_dir(
+        self, all_discrepancies_result, tmp_path: Path, monkeypatch
+    ) -> None:
         """``out_path=None`` defaults to ``reports/report_json/report_json.json``.
 
         Two sharp edges worth pinning down:
@@ -333,10 +392,14 @@ class TestExportEdgeCases:
         pd.testing.assert_frame_equal(all_discrepancies_result["mismatches"], original_mismatches)
         assert all_discrepancies_result["summary"] == original_summary
 
-    def test_all_four_formats_from_same_result(self, all_discrepancies_result, tmp_path: Path) -> None:
+    def test_all_four_formats_from_same_result(
+        self, all_discrepancies_result, tmp_path: Path
+    ) -> None:
         """The same reconcile result must serialise cleanly in all four formats."""
         written = []
         for fmt in ["json", "csv", "md", "xlsx"]:
-            written.append(export_report(all_discrepancies_result, format=fmt, out_path=tmp_path / f"r.{fmt}"))
+            written.append(
+                export_report(all_discrepancies_result, format=fmt, out_path=tmp_path / f"r.{fmt}")
+            )
         assert len(written) == 4
         assert all(Path(p).exists() and Path(p).stat().st_size > 0 for p in written)

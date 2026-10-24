@@ -254,8 +254,7 @@ class TestHeaderVariations:
         """
         p = tmp_path / "blank.csv"
         p.write_text(
-            "Seller Order Id,Product Price\n"
-            "FK1,100\n",
+            "Seller Order Id,Product Price\nFK1,100\n",
             encoding="utf-8",
         )
         df = parse_settlement(p)

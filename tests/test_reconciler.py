@@ -148,11 +148,13 @@ class TestMissingInSettlement:
 
     def test_multiple_missing_orders(self) -> None:
         settlement = _settlement([{"Order_ID": "A", "Product_Value": 100}])
-        expected = _expected([
-            {"Order_ID": "B", "Product_Value": 100},
-            {"Order_ID": "C", "Product_Value": 200},
-            {"Order_ID": "D", "Product_Value": 300},
-        ])
+        expected = _expected(
+            [
+                {"Order_ID": "B", "Product_Value": 100},
+                {"Order_ID": "C", "Product_Value": 200},
+                {"Order_ID": "D", "Product_Value": 300},
+            ]
+        )
         result = reconcile(settlement, expected)
         assert result["summary"]["missing_in_settlement"] == 3
         missing_ids = set(
@@ -192,9 +194,11 @@ class TestExtraInSettlement:
             _settlement([{"Order_ID": "X", "Product_Value": 10}]),
             _expected([{"Order_ID": "A", "Product_Value": 10}]),
         )
-        note = result["mismatches"].loc[
-            result["mismatches"]["Type"] == EXTRA_IN_SETTLEMENT, "Note"
-        ].iloc[0]
+        note = (
+            result["mismatches"]
+            .loc[result["mismatches"]["Type"] == EXTRA_IN_SETTLEMENT, "Note"]
+            .iloc[0]
+        )
         assert "not in expected" in note.lower()
 
 
@@ -236,14 +240,18 @@ class TestValueMismatch:
         assert result["summary"]["value_mismatch_count"] == 0
 
     def test_value_mismatch_amount_accumulates(self) -> None:
-        settlement = _settlement([
-            {"Order_ID": "A", "Product_Value": 900},
-            {"Order_ID": "B", "Product_Value": 800},
-        ])
-        expected = _expected([
-            {"Order_ID": "A", "Product_Value": 1000},
-            {"Order_ID": "B", "Product_Value": 1000},
-        ])
+        settlement = _settlement(
+            [
+                {"Order_ID": "A", "Product_Value": 900},
+                {"Order_ID": "B", "Product_Value": 800},
+            ]
+        )
+        expected = _expected(
+            [
+                {"Order_ID": "A", "Product_Value": 1000},
+                {"Order_ID": "B", "Product_Value": 1000},
+            ]
+        )
         result = reconcile(settlement, expected)
         assert result["summary"]["value_mismatch_amount"] == 300
 
@@ -278,14 +286,18 @@ class TestGstMismatch:
         assert result["summary"]["gst_mismatch_count"] == 0
 
     def test_gst_mismatch_amount_accumulates(self) -> None:
-        settlement = _settlement([
-            {"Order_ID": "A", "Product_Value": 1000, "GST_Amount": 300},
-            {"Order_ID": "B", "Product_Value": 1000, "GST_Amount": 200},
-        ])
-        expected = _expected([
-            {"Order_ID": "A", "Product_Value": 1000, "GST_Amount": 360},
-            {"Order_ID": "B", "Product_Value": 1000, "GST_Amount": 140},
-        ])
+        settlement = _settlement(
+            [
+                {"Order_ID": "A", "Product_Value": 1000, "GST_Amount": 300},
+                {"Order_ID": "B", "Product_Value": 1000, "GST_Amount": 200},
+            ]
+        )
+        expected = _expected(
+            [
+                {"Order_ID": "A", "Product_Value": 1000, "GST_Amount": 360},
+                {"Order_ID": "B", "Product_Value": 1000, "GST_Amount": 140},
+            ]
+        )
         result = reconcile(settlement, expected)
         assert result["summary"]["gst_mismatch_count"] == 2
         assert result["summary"]["gst_mismatch_amount"] == 120
@@ -374,9 +386,7 @@ class TestMultipleDiscrepancies:
     def test_reconcile_is_pure(self, flipkart_csv: Path) -> None:
         """Inputs must not be mutated in place."""
         settlement = parse_settlement(flipkart_csv)
-        expected = pd.DataFrame(
-            [{"Order_ID": "FK770487", "Product_Value": 1}]
-        )
+        expected = pd.DataFrame([{"Order_ID": "FK770487", "Product_Value": 1}])
         settlement_before = settlement.copy()
         expected_before = expected.copy()
         reconcile(settlement, expected)
@@ -445,10 +455,12 @@ class TestInputNormalization:
         assert len(result["mismatches"]) == 0
 
     def test_duplicate_order_ids_do_not_crash(self) -> None:
-        settlement = _settlement([
-            {"Order_ID": "A", "Product_Value": 100},
-            {"Order_ID": "A", "Product_Value": 200},
-        ])
+        settlement = _settlement(
+            [
+                {"Order_ID": "A", "Product_Value": 100},
+                {"Order_ID": "A", "Product_Value": 200},
+            ]
+        )
         expected = _expected([{"Order_ID": "A", "Product_Value": 100}])
         result = reconcile(settlement, expected)
         assert result["summary"]["total_orders_in_settlement"] == 1

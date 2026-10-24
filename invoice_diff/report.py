@@ -64,14 +64,20 @@ def _export_csv(result: dict[str, Any], out_path: Path) -> Path:
             f.write(f"# {k},{v}\n")
         f.write("\n")
         writer = csv.writer(f)
-        writer.writerow(["Order_ID", "Type", "Expected_Value",
-                         "Settlement_Value", "Difference", "Note"])
+        writer.writerow(
+            ["Order_ID", "Type", "Expected_Value", "Settlement_Value", "Difference", "Note"]
+        )
         for _, row in mismatches.iterrows():
-            writer.writerow([
-                row["Order_ID"], row["Type"],
-                row["Expected_Value"], row["Settlement_Value"],
-                row["Difference"], row.get("Note", ""),
-            ])
+            writer.writerow(
+                [
+                    row["Order_ID"],
+                    row["Type"],
+                    row["Expected_Value"],
+                    row["Settlement_Value"],
+                    row["Difference"],
+                    row.get("Note", ""),
+                ]
+            )
     return out_path
 
 
@@ -157,7 +163,6 @@ def _export_md(result: dict[str, Any], out_path: Path) -> Path:
 def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-    from openpyxl.utils import get_column_letter
 
     summary = result.get("summary", {})
     mismatches = result.get("mismatches", pd.DataFrame())
@@ -207,9 +212,14 @@ def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
             for c in ws[row_idx]:
                 c.fill = alt_fill
         # highlight discrepancies in red, clean in green
-        if k in ("missing_in_settlement", "extra_in_settlement",
-                 "value_mismatch_count", "gst_mismatch_count",
-                 "commission_mismatch_count", "total_discrepancies"):
+        if k in (
+            "missing_in_settlement",
+            "extra_in_settlement",
+            "value_mismatch_count",
+            "gst_mismatch_count",
+            "commission_mismatch_count",
+            "total_discrepancies",
+        ):
             if isinstance(v, int) and v > 0:
                 ws.cell(row=row_idx, column=2).fill = bad_fill
                 ws.cell(row=row_idx, column=2).font = Font(bold=True, color="C00000")
@@ -221,8 +231,7 @@ def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
 
     # --- All Mismatches sheet ---
     ws2 = wb.create_sheet("All Mismatches")
-    cols = ["Order_ID", "Type", "Expected_Value", "Settlement_Value",
-            "Difference", "Note"]
+    cols = ["Order_ID", "Type", "Expected_Value", "Settlement_Value", "Difference", "Note"]
     ws2.append(cols)
     for cell in ws2[1]:
         cell.fill = header_fill
@@ -234,14 +243,25 @@ def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
         ws2["A2"].font = Font(italic=True, color="808080")
     else:
         for i, (_, row) in enumerate(mismatches.iterrows(), start=2):
-            ws2.append([row["Order_ID"], row["Type"], row["Expected_Value"],
-                        row["Settlement_Value"], row["Difference"],
-                        row.get("Note", "")])
+            ws2.append(
+                [
+                    row["Order_ID"],
+                    row["Type"],
+                    row["Expected_Value"],
+                    row["Settlement_Value"],
+                    row["Difference"],
+                    row.get("Note", ""),
+                ]
+            )
             for c in ws2[i]:
                 c.border = border
-            if row["Type"] in ("MISSING_IN_SETTLEMENT", "EXTRA_IN_SETTLEMENT",
-                               "VALUE_MISMATCH", "GST_MISMATCH",
-                               "COMMISSION_MISMATCH"):
+            if row["Type"] in (
+                "MISSING_IN_SETTLEMENT",
+                "EXTRA_IN_SETTLEMENT",
+                "VALUE_MISMATCH",
+                "GST_MISMATCH",
+                "COMMISSION_MISMATCH",
+            ):
                 if abs(int(row["Difference"])) > 0:
                     ws2.cell(row=i, column=5).fill = bad_fill
                     ws2.cell(row=i, column=5).font = Font(bold=True, color="C00000")
@@ -264,17 +284,22 @@ def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
             wst["A1"].font = Font(bold=True, size=12, color="1F4E78")
             wst["B1"].font = Font(bold=True, size=12)
             wst.append([])
-            wst.append(["Order_ID", "Expected_Value", "Settlement_Value",
-                        "Difference", "Note"])
+            wst.append(["Order_ID", "Expected_Value", "Settlement_Value", "Difference", "Note"])
             for cell in wst[3]:
                 cell.fill = header_fill
                 cell.font = header_font
                 cell.border = border
             subset = mismatches[mismatches["Type"] == t]
             for i, (_, row) in enumerate(subset.iterrows(), start=4):
-                wst.append([row["Order_ID"], row["Expected_Value"],
-                            row["Settlement_Value"], row["Difference"],
-                            row.get("Note", "")])
+                wst.append(
+                    [
+                        row["Order_ID"],
+                        row["Expected_Value"],
+                        row["Settlement_Value"],
+                        row["Difference"],
+                        row.get("Note", ""),
+                    ]
+                )
                 for c in wst[i]:
                     c.border = border
             for col, w in widths.items():
@@ -289,8 +314,9 @@ def _export_xlsx(result: dict[str, Any], out_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def export_report(result: dict[str, Any], format: str = "json",
-                  out_path: str | Path | None = None) -> str:
+def export_report(
+    result: dict[str, Any], format: str = "json", out_path: str | Path | None = None
+) -> str:
     """Export a reconciliation result to a file.
 
     Args:
@@ -305,10 +331,7 @@ def export_report(result: dict[str, Any], format: str = "json",
         ValueError: on unsupported format.
     """
     fmt = format.lower()
-    if out_path is None:
-        out_path = Path("reports") / f"report_{fmt}"
-    else:
-        out_path = Path(out_path)
+    out_path = Path("reports") / f"report_{fmt}" if out_path is None else Path(out_path)
     if out_path.is_dir() or out_path.suffix == "":
         out_path = out_path / f"report_{fmt}"
 
